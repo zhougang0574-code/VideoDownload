@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>视频字幕</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <p class="back-link"><a href="/">&larr; 返回首页</a></p>
+    <h1>视频字幕</h1>
+    <p class="hint">
+      自动识别视频里的语音并烧录中文字幕：中文原声直接转文字，其他语言会先识别再翻译成中文。
+      字幕是直接烧录进画面的（硬字幕），传到任何平台都能看到。处理时间跟视频长度和电脑性能有关，第一次使用会自动下载语音识别模型。
+    </p>
+
+    <section id="config-section">
+      <p class="hint">
+        翻译默认用免费的 Google 翻译接口，不需要任何配置。如果想要更好的翻译质量，可以去
+        <a href="https://www.deepl.com/pro-api" target="_blank">DeepL官网</a> 注册一个免费 API Key 填在下面（留空就一直用免费引擎，不影响使用）。
+      </p>
+      <form id="config-form">
+        <input id="deepl-key-input" type="text" placeholder="DeepL API Key（可选）">
+        <button type="submit">保存</button>
+      </form>
+      <div id="config-status"></div>
+    </section>
+
+    <section id="process-block">
+      <form id="process-form">
+        <label>视频文件
+          <input id="video-input" type="file" accept="video/*" required>
+        </label>
+        <button id="process-btn" type="submit">生成字幕</button>
+      </form>
+      <div id="task-status"></div>
+      <ul id="history"></ul>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='subtitle.js') }}"></script>
+</body>
+</html>

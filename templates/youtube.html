@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>YouTube 视频工具</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <p class="back-link"><a href="/">&larr; 返回首页</a></p>
+    <h1>YouTube 视频工具</h1>
+
+    <section id="config-section" style="display:none">
+      <p class="hint">
+        上传功能需要先在 Google Cloud Console 配置一次 OAuth 凭据（下载功能不需要这一步）：<br>
+        1. 打开 console.cloud.google.com，新建或选一个项目<br>
+        2. "API和服务 → 库"，启用 YouTube Data API v3<br>
+        3. "API和服务 → OAuth 同意屏幕"，用户类型选"外部"，发布状态留"测试中"，把自己的账号加进"测试用户"<br>
+        4. "API和服务 → 凭据 → 创建凭据 → OAuth客户端ID"，应用类型必须选"电视和有限输入设备"<br>
+        5. 把拿到的 Client ID 和 Client Secret 填在下面，保存一次即可
+      </p>
+      <form id="config-form">
+        <input id="client-id-input" type="text" placeholder="Client ID" required>
+        <input id="client-secret-input" type="text" placeholder="Client Secret" required>
+        <button type="submit">保存配置</button>
+      </form>
+      <div id="config-status"></div>
+    </section>
+
+    <section id="login-section" style="display:none">
+      <p id="login-message"></p>
+      <button id="login-btn" style="display:none">登录Google账号</button>
+      <img id="qrcode-img" style="display:none" alt="登录验证二维码">
+      <div id="user-code" style="display:none"></div>
+      <p class="hint" id="login-hint" style="display:none">用手机扫码打开确认页面，然后手动输入上面这个验证码确认登录</p>
+    </section>
+
+    <section id="download-block" style="display:none">
+      <h2>下载视频</h2>
+      <div class="download-form">
+        <input id="url-input" type="text" placeholder="粘贴YouTube视频链接">
+        <button id="download-btn">下载</button>
+      </div>
+      <div id="task-status"></div>
+      <ul id="history"></ul>
+    </section>
+
+    <section id="upload-block" style="display:none">
+      <h2>上传视频到YouTube</h2>
+      <form id="upload-form">
+        <label>视频文件
+          <input id="video-input" type="file" accept="video/*" required>
+        </label>
+        <input id="title-input" type="text" placeholder="标题（必填）" required>
+        <textarea id="desc-input" placeholder="简介（可选）"></textarea>
+        <input id="tags-input" type="text" placeholder="标签，逗号分隔（可选）">
+        <select id="privacy-input">
+          <option value="private" selected>私享</option>
+          <option value="unlisted">不公开</option>
+          <option value="public">公开</option>
+        </select>
+        <button id="upload-btn" type="submit">上传</button>
+      </form>
+      <div id="upload-status"></div>
+      <ul id="upload-history"></ul>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='youtube.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>B站视频下载器</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <p class="back-link"><a href="/">&larr; 返回首页</a></p>
+    <h1>B站视频下载器</h1>
+
+    <section id="login-section">
+      <p id="login-message">检查登录状态...</p>
+      <button id="login-btn" style="display:none">扫码登录</button>
+      <img id="qrcode-img" style="display:none" alt="登录二维码">
+    </section>
+
+    <section id="download-section" style="display:none">
+      <p class="ok-message">已登录</p>
+
+      <h2>下载视频</h2>
+      <div class="download-form">
+        <input id="url-input" type="text" placeholder="粘贴B站视频链接或BV号">
+        <button id="download-btn">下载</button>
+      </div>
+      <div id="task-status"></div>
+      <ul id="history"></ul>
+
+      <h2>上传视频到B站</h2>
+      <form id="upload-form">
+        <label>视频文件
+          <input id="video-input" type="file" accept="video/*" required>
+        </label>
+        <label>自定义封面（可选，留空自动从视频截一帧）
+          <input id="cover-input" type="file" accept="image/*">
+        </label>
+        <input id="title-input" type="text" placeholder="标题（必填）" required>
+        <textarea id="desc-input" placeholder="简介（可选）"></textarea>
+        <input id="tid-input" type="number" placeholder="分区tid（必填，去B站创作中心查看对应数字）" required>
+        <input id="tag-input" type="text" placeholder="标签，逗号分隔（必填）" required>
+        <button id="upload-btn" type="submit">上传</button>
+      </form>
+      <div id="upload-status"></div>
+      <ul id="upload-history"></ul>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='bilibili.js') }}"></script>
+</body>
+</html>

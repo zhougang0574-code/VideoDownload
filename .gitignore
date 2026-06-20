@@ -1,0 +1,17 @@
+.venv/
+.idea/
+.claude/
+__pycache__/
+*.pyc
+cookies.json
+downloads/
+static/qrcode.png
+uploads_tmp/
+youtube_client.json
+youtube_token.json
+youtube_downloads/
+youtube_uploads_tmp/
+static/youtube_qrcode.png
+deepl_key.json
+subtitled_videos/
+subtitle_tmp/

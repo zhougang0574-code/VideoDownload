@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>视频工具箱</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>选择平台</h1>
+    <div class="platform-choices">
+      <a class="platform-card" href="/bilibili">
+        <span class="platform-name">哔哩哔哩</span>
+        <span class="platform-desc">下载视频 / 上传投稿</span>
+      </a>
+      <a class="platform-card" href="/youtube">
+        <span class="platform-name">YouTube</span>
+        <span class="platform-desc">下载视频 / 上传到频道</span>
+      </a>
+      <a class="platform-card" href="/subtitle">
+        <span class="platform-name">视频字幕</span>
+        <span class="platform-desc">自动识别+翻译成中文字幕</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
