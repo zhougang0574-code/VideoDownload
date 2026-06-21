@@ -10,7 +10,24 @@
     <p class="back-link"><a href="/">&larr; 返回首页</a></p>
     <h1>YouTube 视频工具</h1>
 
+    <section id="download-block">
+      <h2>下载视频</h2>
+      <div class="download-form">
+        <input id="url-input" type="text" placeholder="粘贴YouTube视频链接">
+        <button id="download-btn">下载</button>
+      </div>
+      <label class="translate-option">
+        <input id="translate-input" type="checkbox"> 下载后自动翻译并烧录中文字幕（耗时较长）
+      </label>
+      <label class="translate-option">
+        <input id="translate-filename-input" type="checkbox"> 把文件名翻译成中文
+      </label>
+      <div id="task-status"></div>
+      <ul id="history"></ul>
+    </section>
+
     <section id="config-section" style="display:none">
+      <h2>上传视频到YouTube</h2>
       <p class="hint">
         上传功能需要先在 Google Cloud Console 配置一次 OAuth 凭据（下载功能不需要这一步）：<br>
         1. 打开 console.cloud.google.com，新建或选一个项目<br>
@@ -33,16 +50,6 @@
       <img id="qrcode-img" style="display:none" alt="登录验证二维码">
       <div id="user-code" style="display:none"></div>
       <p class="hint" id="login-hint" style="display:none">用手机扫码打开确认页面，然后手动输入上面这个验证码确认登录</p>
-    </section>
-
-    <section id="download-block" style="display:none">
-      <h2>下载视频</h2>
-      <div class="download-form">
-        <input id="url-input" type="text" placeholder="粘贴YouTube视频链接">
-        <button id="download-btn">下载</button>
-      </div>
-      <div id="task-status"></div>
-      <ul id="history"></ul>
     </section>
 
     <section id="upload-block" style="display:none">

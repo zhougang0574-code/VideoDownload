@@ -59,6 +59,20 @@ button:hover {
   margin-bottom: 16px;
 }
 
+.translate-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.translate-option input {
+  cursor: pointer;
+}
+
 #url-input {
   flex: 1;
   padding: 10px;

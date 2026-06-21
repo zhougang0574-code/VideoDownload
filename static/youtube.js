@@ -13,6 +13,8 @@ const loginHint = document.getElementById("login-hint");
 
 const downloadBlock = document.getElementById("download-block");
 const urlInput = document.getElementById("url-input");
+const translateInput = document.getElementById("translate-input");
+const translateFilenameInput = document.getElementById("translate-filename-input");
 const downloadBtn = document.getElementById("download-btn");
 const taskStatus = document.getElementById("task-status");
 const historyList = document.getElementById("history");
@@ -31,6 +33,10 @@ const uploadHistoryList = document.getElementById("upload-history");
 const STAGE_LABELS = {
   queued: "排队中...",
   downloading: "下载中",
+  extracting_audio: "提取音频中",
+  transcribing: "识别字幕中",
+  translating: "翻译字幕中",
+  burning_subtitles: "烧录字幕中",
   done: "完成",
   error: "出错",
 };
@@ -45,17 +51,18 @@ const UPLOAD_STAGE_LABELS = {
 let loginPollTimer = null;
 
 async function init() {
+  // 下载始终可用，OAuth 配置与登录只用于上传
   const configRes = await fetch("/api/youtube/config/status");
   const configData = await configRes.json();
 
   if (!configData.configured) {
     configSection.style.display = "block";
-    downloadBlock.style.display = "none";
+    loginSection.style.display = "none";
+    uploadBlock.style.display = "none";
     return;
   }
 
   configSection.style.display = "none";
-  downloadBlock.style.display = "block";
 
   const sessionRes = await fetch("/api/youtube/session");
   const sessionData = await sessionRes.json();
@@ -145,7 +152,11 @@ async function startDownload(url) {
   const res = await fetch("/api/youtube/download", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({
+      url,
+      translate: translateInput.checked,
+      translate_filename: translateFilenameInput.checked,
+    }),
   });
   const data = await res.json();
 
@@ -189,7 +200,32 @@ function renderTaskStatus(task) {
 function addHistoryEntry(task) {
   const li = document.createElement("li");
   const filename = task.output_path.split(/[\\/]/).pop();
-  li.innerHTML = `《${task.title}》下载完成 - <a href="/youtube_downloads/${encodeURIComponent(filename)}" target="_blank">打开文件</a>`;
+  const route = task.translated ? "subtitled_videos" : "youtube_downloads";
+  const suffix = task.translated ? "（已烧录中文字幕）" : "";
+
+  const label = document.createElement("span");
+  label.textContent = `《${task.title}》下载完成${suffix} - `;
+
+  const openLink = document.createElement("a");
+  openLink.href = `/${route}/${encodeURIComponent(filename)}`;
+  openLink.target = "_blank";
+  openLink.textContent = "打开文件";
+
+  const locLink = document.createElement("a");
+  locLink.href = "#";
+  locLink.textContent = "打开文件所在位置";
+  locLink.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const res = await fetch("/api/open-location", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: task.output_path }),
+    });
+    const data = await res.json();
+    if (data.error) alert("打开失败：" + data.error);
+  });
+
+  li.append(label, openLink, document.createTextNode(" · "), locLink);
   historyList.prepend(li);
 }
 

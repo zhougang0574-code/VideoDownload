@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 import threading
 import uuid
 
@@ -19,7 +21,7 @@ from youtube.downloader import DOWNLOADS_DIR as YOUTUBE_DOWNLOADS_DIR, download_
 from youtube.uploader import upload_video_file as upload_youtube_video
 from subtitle.burner import burn_subtitles, write_srt
 from subtitle.transcriber import extract_audio, transcribe
-from subtitle.translator import load_deepl_key, save_deepl_key, translate_segments
+from subtitle.translator import load_deepl_key, save_deepl_key, translate_segments, translate_text
 
 app = Flask(__name__)
 
@@ -102,8 +104,21 @@ def _run_upload(task_id, video_path, cover_path, title, desc, tid, tag):
             os.remove(cover_path)
 
 
-def _run_youtube_download(task_id, url):
-    print(f"[YouTube下载] 开始：{url}")
+def _rename_download(out_path, new_title):
+    """Rename a downloaded file to a translated title, keeping its extension.
+    Returns (title, new_path); falls back to the original on an empty title."""
+    safe_title = sanitize_filename(new_title)
+    if not safe_title:
+        return os.path.splitext(os.path.basename(out_path))[0], out_path
+    new_path = os.path.join(os.path.dirname(out_path), f"{safe_title}{os.path.splitext(out_path)[1]}")
+    if os.path.abspath(new_path) == os.path.abspath(out_path):
+        return safe_title, out_path
+    os.replace(out_path, new_path)
+    return safe_title, new_path
+
+
+def _run_youtube_download(task_id, url, translate=False, translate_filename=False):
+    print(f"[YouTube下载] 开始：{url}（翻译字幕：{translate}，翻译文件名：{translate_filename}）")
     try:
         _update_task(task_id, stage="downloading", percent=0)
 
@@ -111,8 +126,21 @@ def _run_youtube_download(task_id, url):
             _update_task(task_id, stage="downloading", percent=percent)
 
         title, out_path = download_youtube_video(url, on_progress)
-        _update_task(task_id, stage="done", percent=100, title=title, output_path=out_path)
-        print(f"[YouTube下载] 完成：{out_path}")
+
+        if translate_filename:
+            zh_title = translate_text(title)
+            if zh_title and zh_title != title:
+                title, out_path = _rename_download(out_path, zh_title)
+
+        if not translate:
+            _update_task(task_id, stage="done", percent=100, title=title, output_path=out_path, translated=False)
+            print(f"[YouTube下载] 完成：{out_path}")
+            return
+
+        _update_task(task_id, title=title)
+        output_path = _generate_subtitled_video(task_id, out_path, title)
+        _update_task(task_id, stage="done", percent=100, title=title, output_path=output_path, translated=True)
+        print(f"[YouTube下载] 完成（含中文字幕）：{output_path}")
     except Exception as e:
         print(f"[YouTube下载] 失败：{e}")
         _update_task(task_id, stage="error", error=str(e))
@@ -141,8 +169,11 @@ def _run_youtube_upload(task_id, video_path, title, desc, tags, privacy):
             os.remove(video_path)
 
 
-def _run_subtitle(task_id, video_path, title):
-    print(f"[字幕] 开始：{title}")
+def _generate_subtitled_video(task_id, video_path, title):
+    """Transcribe a video, translate non-Chinese audio to Chinese, and burn the
+    subtitles into a new mp4. Returns the path of the subtitled video. Cleans up
+    its own temp files but leaves the source video untouched."""
+    os.makedirs(SUBTITLE_TMP_DIR, exist_ok=True)
     audio_path = os.path.join(SUBTITLE_TMP_DIR, f"{task_id}.wav")
     srt_path = os.path.join(SUBTITLE_TMP_DIR, f"{task_id}.srt")
     try:
@@ -162,7 +193,7 @@ def _run_subtitle(task_id, video_path, title):
             def on_translate_progress(percent):
                 _update_task(task_id, stage="translating", percent=percent)
 
-            segments = translate_segments(segments, on_translate_progress)
+            segments = translate_segments(segments, language, on_translate_progress)
 
         write_srt(segments, srt_path)
 
@@ -175,16 +206,25 @@ def _run_subtitle(task_id, video_path, title):
             _update_task(task_id, stage="burning_subtitles", percent=percent)
 
         burn_subtitles(video_path, srt_path, output_path, duration, on_burn_progress)
+        return output_path
+    finally:
+        for path in (audio_path, srt_path):
+            if os.path.exists(path):
+                os.remove(path)
 
+
+def _run_subtitle(task_id, video_path, title):
+    print(f"[字幕] 开始：{title}")
+    try:
+        output_path = _generate_subtitled_video(task_id, video_path, title)
         _update_task(task_id, stage="done", percent=100, output_path=output_path)
         print(f"[字幕] 完成：{output_path}")
     except Exception as e:
         print(f"[字幕] 失败：{e}")
         _update_task(task_id, stage="error", error=str(e))
     finally:
-        for path in (video_path, audio_path, srt_path):
-            if os.path.exists(path):
-                os.remove(path)
+        if os.path.exists(video_path):
+            os.remove(video_path)
 
 
 @app.route("/")
@@ -330,14 +370,21 @@ def api_youtube_login_status():
 
 @app.route("/api/youtube/download", methods=["POST"])
 def api_youtube_download():
-    url = (request.get_json(silent=True) or {}).get("url", "").strip()
+    data = request.get_json(silent=True) or {}
+    url = data.get("url", "").strip()
+    translate = bool(data.get("translate"))
+    translate_filename = bool(data.get("translate_filename"))
     if not url:
         return jsonify(error="请输入视频链接"), 400
 
     task_id = uuid.uuid4().hex
     with _tasks_lock:
         TASKS[task_id] = {"stage": "queued", "percent": 0}
-    threading.Thread(target=_run_youtube_download, args=(task_id, url), daemon=True).start()
+    threading.Thread(
+        target=_run_youtube_download,
+        args=(task_id, url, translate, translate_filename),
+        daemon=True,
+    ).start()
     return jsonify(task_id=task_id)
 
 
@@ -353,6 +400,33 @@ def api_youtube_download_status(task_id):
 @app.route("/youtube_downloads/<path:filename>")
 def serve_youtube_download(filename):
     return send_from_directory(YOUTUBE_DOWNLOADS_DIR, filename)
+
+
+@app.route("/api/open-location", methods=["POST"])
+def api_open_location():
+    """Reveal a downloaded file in the OS file manager. Restricted to the
+    app's own output folders so an arbitrary path can't be opened."""
+    path = (request.get_json(silent=True) or {}).get("path", "")
+    if not path:
+        return jsonify(error="缺少文件路径"), 400
+
+    abspath = os.path.abspath(path)
+    allowed_dirs = [os.path.abspath(d) for d in (YOUTUBE_DOWNLOADS_DIR, SUBTITLE_OUTPUT_DIR, DOWNLOADS_DIR)]
+    if not any(abspath.startswith(d + os.sep) for d in allowed_dirs):
+        return jsonify(error="非法路径"), 403
+    if not os.path.exists(abspath):
+        return jsonify(error="文件不存在"), 404
+
+    try:
+        if sys.platform == "win32":
+            subprocess.Popen(["explorer", "/select,", os.path.normpath(abspath)])
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", "-R", abspath])
+        else:
+            subprocess.Popen(["xdg-open", os.path.dirname(abspath)])
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+    return jsonify(ok=True)
 
 
 @app.route("/api/youtube/upload", methods=["POST"])
