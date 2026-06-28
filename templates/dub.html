@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>鬼畜配音</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+  #player { width: 100%; max-height: 360px; background: #000; margin-top: 10px; }
+  .clip-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+  .clip-row span { min-width: 110px; }
+  #review { margin-top: 16px; }
+  .seg { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; }
+  .seg .time { white-space: nowrap; color: #888; font-size: 12px; padding-top: 6px; min-width: 92px; }
+  .seg textarea { flex: 1; min-height: 38px; font-size: 14px; }
+  #engine-hint { color: #888; }
+  .cfg-provider { margin: 8px 0; padding: 8px; border: 1px solid #ddd; border-radius: 6px; }
+  .cfg-provider h3 { margin: 0 0 6px; font-size: 14px; }
+  .cfg-provider input { margin: 2px 4px 2px 0; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <p class="back-link"><a href="/">&larr; 返回首页</a></p>
+    <h1>鬼畜配音</h1>
+    <p class="hint">
+      上传一段自带字幕的影视片段，截取一段后台词会被「谷歌翻译来回翻 N 遍」搞得荒腔走板，
+      再用 TTS 重新配音，新台词字幕叠在原字幕<strong>上方</strong>（不覆盖原字幕）。
+      语音会自动对齐到原句时长，画面、配音、字幕保持同步。
+    </p>
+
+    <section id="upload-block">
+      <label>视频文件
+        <input id="video-input" type="file" accept="video/*">
+      </label>
+      <video id="player" controls></video>
+
+      <div class="clip-row">
+        <span>当前位置：<b id="cur-time">0.00</b>s</span>
+        <button type="button" id="set-in">设为入点</button>
+        <button type="button" id="set-out">设为出点</button>
+      </div>
+      <div class="clip-row">
+        <span>入点：<b id="in-label">0.00</b>s</span>
+        <span>出点：<b id="out-label">0.00</b>s</span>
+        <span>时长：<b id="dur-label">0.00</b>s</span>
+      </div>
+
+      <div class="clip-row">
+        <label>翻译遍数：<b id="rounds-label">20</b>
+          <input id="rounds" type="range" min="5" max="40" value="20">
+        </label>
+      </div>
+      <div class="clip-row">
+        <label>配音引擎
+          <select id="engine"></select>
+        </label>
+        <span id="engine-hint" class="hint"></span>
+      </div>
+      <div class="clip-row" id="voice-row">
+        <label>预设音色
+          <select id="voice">
+            <option value="zh-CN-YunjianNeural">云健（男·叙事）</option>
+            <option value="zh-CN-YunxiNeural">云希（男·活泼）</option>
+            <option value="zh-CN-YunyangNeural">云扬（男·新闻）</option>
+            <option value="zh-CN-XiaoxiaoNeural">晓晓（女）</option>
+          </select>
+        </label>
+      </div>
+      <div class="clip-row">
+        <label><input id="keep-bg" type="checkbox" checked> 保留原背景音（压低）</label>
+      </div>
+
+      <button id="process-btn" type="button" disabled>开始处理</button>
+      <div id="task-status"></div>
+
+      <details id="cloud-config" style="margin-top:14px;">
+        <summary>云端克隆引擎 Key 配置（申请到后填入即点亮）</summary>
+        <p class="hint">克隆型引擎会复刻原片中每句说话人的音色。云端需各自的 Key，本地 XTTS 需安装独立环境（见文档）。</p>
+        <div class="cfg-provider">
+          <h3>阿里云 CosyVoice</h3>
+          <input data-provider="cosyvoice" data-field="api_key" type="text" placeholder="API Key">
+          <button class="save-cfg" type="button" data-provider="cosyvoice">保存</button>
+        </div>
+        <div class="cfg-provider">
+          <h3>讯飞 语音复刻</h3>
+          <input data-provider="iflytek" data-field="app_id" type="text" placeholder="AppID">
+          <input data-provider="iflytek" data-field="api_key" type="text" placeholder="APIKey">
+          <input data-provider="iflytek" data-field="api_secret" type="text" placeholder="APISecret">
+          <button class="save-cfg" type="button" data-provider="iflytek">保存</button>
+        </div>
+        <div class="cfg-provider">
+          <h3>火山引擎 声音复刻</h3>
+          <input data-provider="volc" data-field="app_id" type="text" placeholder="AppID">
+          <input data-provider="volc" data-field="access_token" type="text" placeholder="AccessToken">
+          <input data-provider="volc" data-field="cluster" type="text" placeholder="Cluster">
+          <button class="save-cfg" type="button" data-provider="volc">保存</button>
+        </div>
+        <div id="cfg-status"></div>
+      </details>
+    </section>
+
+    <section id="review" style="display:none;">
+      <h2>校对台词</h2>
+      <p class="hint">语音识别可能有错字（文言腔/人名），改好后再继续。时间轴不变。</p>
+      <div id="seg-list"></div>
+      <button id="confirm-btn" type="button">确认并开始鬼畜翻译</button>
+    </section>
+
+    <ul id="history"></ul>
+  </div>
+  <script src="{{ url_for('static', filename='dub.js') }}"></script>
+</body>
+</html>

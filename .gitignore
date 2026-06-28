@@ -15,3 +15,7 @@ static/youtube_qrcode.png
 deepl_key.json
 subtitled_videos/
 subtitle_tmp/
+dub_tmp/
+dubbed_videos/
+voice_config.json
+tts_clone_venv/
