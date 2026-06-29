@@ -82,17 +82,24 @@
 
 不依赖任何云，装一个独立的 Python 环境即可，凭本机 GPU（已检测到 RTX 4060 Ti）跑。
 
-在**项目根目录**执行：
+在**项目根目录**执行（以下版本组合已在 RTX 4060 Ti / Python 3.11.9 实测跑通）：
 
 ```bat
 python -m venv tts_clone_venv
 tts_clone_venv\Scripts\python -m pip install --upgrade pip
-tts_clone_venv\Scripts\python -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-tts_clone_venv\Scripts\python -m pip install coqui-tts
+tts_clone_venv\Scripts\python -m pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+tts_clone_venv\Scripts\python -m pip install coqui-tts "transformers==4.57.1" pypinyin jieba
 ```
+
+> **务必按上面的版本锁定，否则会踩三个坑：**
+> 1. `torch` 不写 `==2.6.0`：会装到没有 cu124 wheel 的版本而退化成 **CPU 包**（`cuda_available=False`，吃不到显卡）。
+> 2. `transformers` 不锁 `==4.57.1`（<5）：coqui-tts 用到 5.x 已删除的 `isin_mps_friendly`，`import TTS` 直接报错。
+> 3. 不装 `pypinyin`、`jieba`：中文合成报 `Chinese requires: pypinyin`。
 
 - 首次合成会自动下载 XTTS-v2 模型（约 1.8GB）。
 - 装好后应用里「本地 XTTS-v2」会自动从「不可用」变为可选，无需填任何 Key。
+- 已实测：模型在 GPU(`cuda`) 上加载，逐句用原片切片做参考音克隆，`synth_segments(engine="xtts")`
+  能产出与原时间轴对齐的人声轨。
 - 详细说明见 `tts_clone/xtts_worker.py` 文件头注释。
 
 ---

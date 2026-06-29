@@ -4,11 +4,15 @@
 处理所有 job（避免每句重载模型）。每个 job 用自己的 ref_audio（本句原声切片）
 做零样本克隆，复刻该句说话人的音色。
 
-安装（在项目根目录）：
+安装（在项目根目录，以下版本组合已在 RTX 4060 Ti / Python 3.11 实测跑通）：
     python -m venv tts_clone_venv
     tts_clone_venv\\Scripts\\python -m pip install --upgrade pip
-    tts_clone_venv\\Scripts\\python -m pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-    tts_clone_venv\\Scripts\\python -m pip install coqui-tts
+    tts_clone_venv\\Scripts\\python -m pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+    tts_clone_venv\\Scripts\\python -m pip install coqui-tts "transformers==4.57.1" pypinyin jieba
+注意：
+  - torch 必须锁 2.6.0：不写版本会装到没有 cu124 的版本而退化成 CPU 包（cuda 不可用）。
+  - transformers 必须锁 <5（4.57.1）：coqui-tts 用到 5.x 已删除的 isin_mps_friendly，否则 import 报错。
+  - pypinyin、jieba 是中文合成必需（缺了会报 "Chinese requires: pypinyin"）。
 首次合成会自动下载 XTTS-v2 模型（约 1.8GB）。
 
 jobs.json 结构：

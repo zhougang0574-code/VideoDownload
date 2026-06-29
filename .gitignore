@@ -19,3 +19,4 @@ dub_tmp/
 dubbed_videos/
 voice_config.json
 tts_clone_venv/
+apikey
